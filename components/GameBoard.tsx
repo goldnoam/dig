@@ -1,0 +1,84 @@
+
+import React, { useState } from 'react';
+import { CubeType, Effect } from '../types';
+import { Cube } from './Cube';
+import EffectComponent from './Effect';
+
+interface GameBoardProps {
+  cubes: CubeType[];
+  digCube: (id: string) => void;
+  effects: Effect[];
+  removeEffect: (id: string) => void;
+}
+
+const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, effects, removeEffect }) => {
+  const [rotation, setRotation] = useState({ x: -25, y: 35 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setLastMousePos({ x: e.clientX, y: e.clientY });
+  };
+  
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const dx = e.clientX - lastMousePos.x;
+    const dy = e.clientY - lastMousePos.y;
+    setRotation(r => ({ x: r.x - dy * 0.5, y: r.y + dx * 0.5 }));
+    setLastMousePos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  if (cubes.length === 0) return null;
+  
+  const gridSize = Math.cbrt(cubes.length);
+  const CUBE_SIZE = 50;
+  const gridCenter = Math.floor(gridSize / 2);
+
+  const containerStyle: React.CSSProperties = {
+    transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
+  };
+  
+  const gameBoardSize = gridSize * CUBE_SIZE * 1.5;
+
+  return (
+    <div
+      className={`flex items-center justify-center select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+      style={{ perspective: '2000px', width: `${gameBoardSize}px`, height: `${gameBoardSize}px` }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+    >
+      <div
+        className="relative transition-transform duration-100 ease-linear"
+        style={{ ...containerStyle, transformStyle: 'preserve-3d' }}
+      >
+        {cubes.map((cube) => (
+          <Cube
+            key={cube.id}
+            cube={cube}
+            size={CUBE_SIZE}
+            gridCenter={gridCenter}
+            digCube={digCube}
+          />
+        ))}
+        {effects.map((effect) => (
+          <EffectComponent
+            key={effect.id}
+            effect={effect}
+            onComplete={removeEffect}
+            size={CUBE_SIZE}
+            gridCenter={gridCenter}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default GameBoard;

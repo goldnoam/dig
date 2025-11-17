@@ -1,0 +1,5 @@
+{
+  "name": "Dig It!",
+  "description": "A simple and satisfying game where you dig through a block of colorful cubes to find a hidden surprise toy at the center. Features levels, a timer, and high scores.",
+  "requestFramePermissions": []
+}
