@@ -1,7 +1,9 @@
-
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { CubeType, Effect } from '../types';
 import { LEVELS } from '../constants';
+import * as AudioPlayer from '../utils/audio';
+
+const CRUMBLE_ANIMATION_DURATION = 300; // ms
 
 const useGameLogic = () => {
   const [level, setLevel] = useState(0);
@@ -11,6 +13,9 @@ const useGameLogic = () => {
   const [timer, setTimer] = useState(0);
   const [highScore, setHighScore] = useState<number | null>(null);
   const [effects, setEffects] = useState<Effect[]>([]);
+  const [isRecoiling, setIsRecoiling] = useState(false);
+  const [isAutoDiscovering, setIsAutoDiscovering] = useState(false);
+  const hasInteracted = useRef(false);
 
   const currentLevelConfig = useMemo(() => LEVELS[level % LEVELS.length], [level]);
 
@@ -44,6 +49,7 @@ const useGameLogic = () => {
     setIsWon(false);
     setTimer(0);
     setEffects([]);
+    setIsAutoDiscovering(false);
     const savedHighScore = localStorage.getItem(`dig-it-highscore-${level}`);
     setHighScore(savedHighScore ? parseFloat(savedHighScore) : null);
   }, [level, currentLevelConfig]);
@@ -61,21 +67,31 @@ const useGameLogic = () => {
     }
     return () => clearInterval(interval);
   }, [isGameActive, isWon]);
+  
+  const finalizeDig = useCallback((id: string) => {
+     setCubes(currentCubes => currentCubes.map(c => c.id === id ? { ...c, isVisible: false, isDying: false } : c));
+  }, []);
 
   const digCube = (id: string) => {
-    if (isWon) return;
+    if (isWon || isAutoDiscovering) return;
+
+    if (!hasInteracted.current) {
+      AudioPlayer.playBackgroundMusic();
+      hasInteracted.current = true;
+    }
     
     let dugCube: CubeType | undefined;
     const newCubes = cubes.map((cube) => {
-      if (cube.id === id && !cube.isToy && cube.isVisible) {
-        dugCube = cube;
-        return { ...cube, isVisible: false };
+      if (cube.id === id && !cube.isToy && cube.isVisible && !cube.isDying) {
+        dugCube = { ...cube, isDying: true };
+        return { ...cube, isDying: true };
       }
       return cube;
     });
 
     if (dugCube) {
       setCubes(newCubes);
+      AudioPlayer.playDigSound();
       setEffects(prev => [...prev, {
         id: `${dugCube.id}-${Date.now()}`,
         type: 'dig',
@@ -84,17 +100,59 @@ const useGameLogic = () => {
         z: dugCube.z,
         color: dugCube.color,
       }]);
+
+      setIsRecoiling(true);
+      setTimeout(() => setIsRecoiling(false), 150);
+
+      setTimeout(() => finalizeDig(id), CRUMBLE_ANIMATION_DURATION);
     }
   };
+  
+  const autoDiscover = () => {
+    if (isAutoDiscovering || isWon) return;
+
+    if (!hasInteracted.current) {
+      AudioPlayer.playBackgroundMusic();
+      hasInteracted.current = true;
+    }
+
+    setIsAutoDiscovering(true);
+    const cubesToDig = cubes.filter(c => !c.isToy && c.isVisible);
+    
+    let i = 0;
+    const interval = setInterval(() => {
+        if (i < cubesToDig.length) {
+            const cube = cubesToDig[i];
+            
+            // Re-map to the latest cubes state to avoid stale closures
+            setCubes(currentCubes => currentCubes.map(c => c.id === cube.id ? { ...c, isDying: true } : c));
+
+            AudioPlayer.playDigSound();
+            setEffects(prev => [...prev, {
+                id: `${cube.id}-${Date.now()}`, type: 'dig',
+                x: cube.x, y: cube.y, z: cube.z, color: cube.color,
+            }]);
+            setTimeout(() => finalizeDig(cube.id), CRUMBLE_ANIMATION_DURATION);
+            i++;
+        } else {
+            clearInterval(interval);
+            // The win condition useEffect will handle the rest
+        }
+    }, 30);
+  };
+
 
   const remainingCubes = useMemo(() => {
     return cubes.filter(c => !c.isToy && c.isVisible).length;
   }, [cubes]);
 
   useEffect(() => {
-    if (remainingCubes === 0 && cubes.length > 0 && !isWon) {
+    if (remainingCubes === 0 && cubes.length > 0 && !isWon && isGameActive) {
       setIsWon(true);
       setIsGameActive(false);
+      setIsAutoDiscovering(false);
+      AudioPlayer.playWinSound();
+
       if (highScore === null || timer < highScore) {
         setHighScore(timer);
         localStorage.setItem(`dig-it-highscore-${level}`, timer.toString());
@@ -111,7 +169,7 @@ const useGameLogic = () => {
           colors: [...colors, toyColor],
       }]);
     }
-  }, [cubes, remainingCubes, timer, highScore, level, isWon, currentLevelConfig]);
+  }, [cubes, remainingCubes, timer, highScore, level, isWon, currentLevelConfig, isGameActive]);
   
   const removeEffect = useCallback((id: string) => {
     setEffects(prev => prev.filter(e => e.id !== id));
@@ -132,12 +190,16 @@ const useGameLogic = () => {
     highScore,
     remainingCubes,
     isWon,
+    isRecoiling,
+    isAutoDiscovering,
     effects,
     digCube,
+    finalizeDig,
     nextLevel,
     resetGame,
     currentLevelConfig,
     removeEffect,
+    autoDiscover,
   };
 };
 

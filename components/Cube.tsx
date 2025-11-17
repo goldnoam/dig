@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CubeType } from '../types';
 
@@ -7,15 +6,17 @@ interface CubeProps {
   size: number;
   gridCenter: number;
   digCube: (id: string) => void;
+  finalizeDig: (id: string) => void;
+  toyShape: string;
 }
 
-const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube }) => {
-  const { x, y, z, color, isVisible, isToy, id } = cube;
+const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube, toyShape }) => {
+  const { x, y, z, color, isVisible, isToy, id, isDying } = cube;
 
-  if (!isVisible) {
+  if (!isVisible && !isDying) {
     return null;
   }
-
+  
   const posX = (x - gridCenter) * size;
   const posY = (y - gridCenter) * size;
   const posZ = (z - gridCenter) * size;
@@ -26,15 +27,17 @@ const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube })
     position: 'absolute',
     transform: `translate3d(${posX}px, ${posY}px, ${posZ}px)`,
     transformStyle: 'preserve-3d',
+    animation: isDying ? `crumble 300ms ease-out forwards` : undefined,
+    pointerEvents: isDying ? 'none' : 'auto',
   };
 
   const handleClick = () => {
-    if (!isToy) {
+    if (!isToy && !isDying) {
       digCube(id);
     }
   };
 
-  // The toy is a special, glowing sphere
+  // The toy is a special, glowing sphere with an emoji inside
   if (isToy) {
     const toySize = size * 1.2;
     return (
@@ -50,9 +53,17 @@ const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube })
             borderRadius: '50%',
             background: `radial-gradient(circle at 65% 15%, white, ${color} 60%)`,
             boxShadow: `0 0 15px ${color}, 0 0 25px ${color}, 0 0 35px ${color}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: `${toySize * 0.6}px`,
+            color: 'white',
+            textShadow: '0 0 5px black',
           }}
           className="animate-pulse"
-        />
+        >
+          {toyShape}
+        </div>
       </div>
     );
   }
@@ -79,7 +90,7 @@ const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube })
     <div
       style={style}
       onClick={handleClick}
-      className="cursor-pointer group"
+      className="cursor-pointer group transform hover:scale-110 transition-transform duration-100"
     >
       <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
         {faces.map((face, i) => (

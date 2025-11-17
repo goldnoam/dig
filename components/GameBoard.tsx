@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CubeType, Effect } from '../types';
 import { Cube } from './Cube';
@@ -7,11 +6,14 @@ import EffectComponent from './Effect';
 interface GameBoardProps {
   cubes: CubeType[];
   digCube: (id: string) => void;
+  finalizeDig: (id: string) => void;
   effects: Effect[];
   removeEffect: (id: string) => void;
+  isRecoiling: boolean;
+  toyShape: string;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, effects, removeEffect }) => {
+const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, finalizeDig, effects, removeEffect, isRecoiling, toyShape }) => {
   const [rotation, setRotation] = useState({ x: -25, y: 35 });
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
@@ -35,12 +37,12 @@ const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, effects, removeEf
 
   if (cubes.length === 0) return null;
   
-  const gridSize = Math.cbrt(cubes.length);
+  const gridSize = Math.cbrt(cubes.reduce((acc, c) => c.isVisible ? acc + 1 : acc, cubes.filter(c => c.isToy).length) || cubes.length);
   const CUBE_SIZE = 50;
-  const gridCenter = Math.floor(gridSize / 2);
+  const gridCenter = (gridSize - 1) / 2;
 
   const containerStyle: React.CSSProperties = {
-    transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
+    transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) scale3d(${isRecoiling ? 0.98 : 1}, ${isRecoiling ? 0.98 : 1}, ${isRecoiling ? 0.98 : 1})`,
   };
   
   const gameBoardSize = gridSize * CUBE_SIZE * 1.5;
@@ -55,7 +57,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, effects, removeEf
       onMouseLeave={handleMouseUp}
     >
       <div
-        className="relative transition-transform duration-100 ease-linear"
+        className="relative transition-transform duration-150 ease-out"
         style={{ ...containerStyle, transformStyle: 'preserve-3d' }}
       >
         {cubes.map((cube) => (
@@ -65,6 +67,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, effects, removeEf
             size={CUBE_SIZE}
             gridCenter={gridCenter}
             digCube={digCube}
+            finalizeDig={finalizeDig}
+            toyShape={toyShape}
           />
         ))}
         {effects.map((effect) => (

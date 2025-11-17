@@ -1,4 +1,3 @@
-
 export interface CubeType {
   id: string;
   x: number;
@@ -7,6 +6,7 @@ export interface CubeType {
   color: string;
   isVisible: boolean;
   isToy: boolean;
+  isDying?: boolean;
 }
 
 export interface LevelConfig {
@@ -14,6 +14,7 @@ export interface LevelConfig {
   toySize: number;
   colors: string[];
   toyColor: string;
+  toyShape: string;
 }
 
 export interface Effect {
