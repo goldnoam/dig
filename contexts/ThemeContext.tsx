@@ -14,20 +14,21 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('dig-it-theme') as Theme;
-      if (savedTheme) {
+      // Ensure saved theme is valid, otherwise fall back to dark
+      if (savedTheme === 'light' || savedTheme === 'dark') {
         return savedTheme;
       }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
-    return 'dark';
+    return 'dark'; // Default to dark theme
   });
 
   useEffect(() => {
     localStorage.setItem('dig-it-theme', theme);
+    const root = document.documentElement;
     if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
     }
   }, [theme]);
 
