@@ -11,7 +11,7 @@ interface CubeProps {
 }
 
 const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube, toyShape }) => {
-  const { x, y, z, color, isVisible, isToy, id, isDying } = cube;
+  const { x, y, z, color, isVisible, isToy, id, isDying, cubeType, health, maxHealth } = cube;
 
   if (!isVisible && !isDying) {
     return null;
@@ -76,6 +76,12 @@ const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube, t
     backgroundColor: color,
     border: '1px solid rgba(0,0,0,0.5)',
   };
+  
+  const healthPercentage = health / maxHealth;
+  const toughnessBrightness = cubeType === 'tough' ? 0.8 : 1;
+  // Damaged tough cubes get brighter as they are about to break
+  const damageBrightness = cubeType === 'tough' ? 1 - (healthPercentage * 0.4) : 1;
+
 
   const faces = [
     { transform: `rotateY(0deg) translateZ(${size / 2}px)`, brightness: 1 }, // front
@@ -97,7 +103,11 @@ const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube, t
           <div
             key={i}
             className="group-hover:brightness-125 transition-all duration-100"
-            style={{ ...faceStyle, transform: face.transform, filter: `brightness(${face.brightness})` }}
+            style={{ 
+              ...faceStyle, 
+              transform: face.transform, 
+              filter: `brightness(${face.brightness * toughnessBrightness * damageBrightness})` 
+            }}
           />
         ))}
       </div>

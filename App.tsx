@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import GameBoard from './components/GameBoard';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -35,7 +35,16 @@ export default function App(): React.JSX.Element {
     togglePause,
     undoLastDig,
     digHistory,
+    winStats,
   } = useGameLogic();
+  
+  const [isWinModalOpen, setIsWinModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (isWon) {
+      setIsWinModalOpen(true);
+    }
+  }, [isWon]);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -73,8 +82,10 @@ export default function App(): React.JSX.Element {
           togglePause={togglePause}
           undoLastDig={undoLastDig}
           canUndo={digHistory.length > 0 && !isAutoDiscovering && !isWon}
+          nextLevel={handleNextLevel}
+          resetGame={handleResetGame}
         />
-        <div className="relative">
+        <div className="relative" id="game-board-container">
             <GameBoard
               cubes={cubes}
               digCube={digCube}
@@ -94,26 +105,56 @@ export default function App(): React.JSX.Element {
         {isWon && (
           <>
             <Fireworks />
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 w-full max-w-md">
-                <div className="bg-gray-800/80 dark:bg-gray-900/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 text-center text-white">
-                  <h2 className="text-4xl font-bold text-yellow-400 animate-pulse">You found the toy!</h2>
-                  <p className="text-lg mt-2">Your time: {timer.toFixed(1)}s</p>
-                  <div className="flex justify-center space-x-4 mt-6">
+            {isWinModalOpen && (
+              <div className="absolute bottom-1/2 translate-y-1/2 left-1/2 -translate-x-1/2 z-50 w-full max-w-md">
+                  <div className="bg-gray-800/70 dark:bg-gray-900/80 backdrop-blur-lg rounded-2xl shadow-2xl p-6 text-center text-white relative">
                     <button
-                      onClick={handleNextLevel}
-                      className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105"
+                        onClick={() => setIsWinModalOpen(false)}
+                        className="absolute top-2 right-2 text-gray-400 hover:text-white transition-colors"
+                        aria-label="Close win screen"
                     >
-                      Next Level
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
-                     <button
-                      onClick={handleResetGame}
-                      className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105"
-                    >
-                      Play Again
-                    </button>
+                    <h2 className="text-4xl font-bold text-yellow-400 animate-pulse">You found the toy!</h2>
+                    
+                    <div className="grid grid-cols-2 gap-4 my-4 text-left">
+                      <div className="bg-white/10 p-3 rounded-lg">
+                          <p className="text-sm text-gray-300">Time</p>
+                          <p className="text-2xl font-bold">{timer.toFixed(1)}s</p>
+                      </div>
+                      <div className="bg-white/10 p-3 rounded-lg">
+                          <p className="text-sm text-gray-300">Best Time</p>
+                          <p className="text-2xl font-bold">{highScore ? highScore.toFixed(1) + 's' : '-'}</p>
+                      </div>
+                       <div className="bg-white/10 p-3 rounded-lg">
+                          <p className="text-sm text-gray-300">Cubes Dug</p>
+                          <p className="text-2xl font-bold">{winStats.digs}</p>
+                      </div>
+                       <div className="bg-white/10 p-3 rounded-lg">
+                          <p className="text-sm text-gray-300">Efficiency</p>
+                          <p className="text-2xl font-bold">{winStats.efficiency.toFixed(0)}%</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center space-x-4 mt-6">
+                      <button
+                        onClick={handleNextLevel}
+                        className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105"
+                      >
+                        Next Level
+                      </button>
+                       <button
+                        onClick={handleResetGame}
+                        className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105"
+                      >
+                        Play Again
+                      </button>
+                    </div>
                   </div>
-                </div>
-            </div>
+              </div>
+            )}
           </>
         )}
       </main>

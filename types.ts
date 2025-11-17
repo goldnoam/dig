@@ -7,6 +7,9 @@ export interface CubeType {
   isVisible: boolean;
   isToy: boolean;
   isDying?: boolean;
+  cubeType: 'normal' | 'tough';
+  health: number;
+  maxHealth: number;
 }
 
 export interface LevelConfig {
@@ -15,6 +18,7 @@ export interface LevelConfig {
   colors: string[];
   toyColor: string;
   toyShape: string;
+  toughCubeChance?: number;
 }
 
 export interface Effect {
@@ -25,4 +29,14 @@ export interface Effect {
   z: number;
   color?: string;
   colors?: string[];
+}
+
+export interface DigAction {
+  cubeId: string;
+  previousHealth: number;
+}
+
+export interface WinStats {
+  digs: number;
+  efficiency: number;
 }

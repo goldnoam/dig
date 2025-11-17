@@ -13,6 +13,8 @@ interface InfoPanelProps {
   togglePause: () => void;
   undoLastDig: () => void;
   canUndo: boolean;
+  nextLevel: () => void;
+  resetGame: () => void;
 }
 
 const InfoItem: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
@@ -54,6 +56,8 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   togglePause,
   undoLastDig,
   canUndo,
+  nextLevel,
+  resetGame
 }) => {
   return (
     <div className="flex flex-col items-center gap-4 md:gap-6 mb-6">
@@ -64,26 +68,47 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
         <InfoItem label="Cubes Left" value={remainingCubes} />
       </div>
       <div className="flex flex-wrap gap-2 md:gap-4 justify-center">
-        <ActionButton
-          onClick={togglePause}
-          disabled={isGameWon}
-          className="bg-yellow-500 hover:bg-yellow-600"
-        >
-          {isPaused ? 'Resume' : 'Pause'}
-        </ActionButton>
-        <ActionButton
-          onClick={undoLastDig}
-          disabled={!canUndo || isPaused}
-          className="bg-blue-500 hover:bg-blue-600"
-        >
-          Undo
-        </ActionButton>
-         <ActionButton
-          onClick={autoDiscover}
-          disabled={isAutoDiscovering || isGameWon || isPaused}
-        >
-          {isAutoDiscovering ? 'Discovering...' : 'Auto Discover'}
-        </ActionButton>
+        {isGameWon ? (
+          <>
+            <ActionButton
+              onClick={nextLevel}
+              disabled={false}
+              className="bg-green-500 hover:bg-green-600"
+            >
+              Next Level
+            </ActionButton>
+            <ActionButton
+              onClick={resetGame}
+              disabled={false}
+              className="bg-blue-500 hover:bg-blue-600"
+            >
+              Play Again
+            </ActionButton>
+          </>
+        ) : (
+          <>
+            <ActionButton
+              onClick={togglePause}
+              disabled={isGameWon}
+              className="bg-yellow-500 hover:bg-yellow-600"
+            >
+              {isPaused ? 'Resume' : 'Pause'}
+            </ActionButton>
+            <ActionButton
+              onClick={undoLastDig}
+              disabled={!canUndo || isPaused}
+              className="bg-blue-500 hover:bg-blue-600"
+            >
+              Undo
+            </ActionButton>
+             <ActionButton
+              onClick={autoDiscover}
+              disabled={isAutoDiscovering || isGameWon || isPaused}
+            >
+              {isAutoDiscovering ? 'Discovering...' : 'Auto Discover'}
+            </ActionButton>
+          </>
+        )}
       </div>
     </div>
   );

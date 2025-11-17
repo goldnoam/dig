@@ -39,7 +39,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, finalizeDig, effe
 
   if (cubes.length === 0) return null;
   
-  const gridSize = Math.cbrt(cubes.reduce((acc, c) => c.isVisible ? acc + 1 : acc, cubes.filter(c => c.isToy).length) || cubes.length);
+  const gridSize = Math.cbrt(cubes.length);
   const CUBE_SIZE = 50;
   const gridCenter = (gridSize - 1) / 2;
 

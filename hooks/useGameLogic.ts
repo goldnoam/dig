@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { CubeType, Effect } from '../types';
+import { CubeType, Effect, DigAction, WinStats } from '../types';
 import { LEVELS } from '../constants';
 import * as AudioPlayer from '../utils/audio';
 
 const CRUMBLE_ANIMATION_DURATION = 300; // ms
+const TOUGH_CUBE_HEALTH = 3;
 
 const useGameLogic = () => {
   const [level, setLevel] = useState(0);
@@ -16,17 +17,20 @@ const useGameLogic = () => {
   const [effects, setEffects] = useState<Effect[]>([]);
   const [isRecoiling, setIsRecoiling] = useState(false);
   const [isAutoDiscovering, setIsAutoDiscovering] = useState(false);
-  const [digHistory, setDigHistory] = useState<string[]>([]);
+  const [digHistory, setDigHistory] = useState<DigAction[]>([]);
+  const [winStats, setWinStats] = useState<WinStats>({ digs: 0, efficiency: 0 });
   const hasInteracted = useRef(false);
+  const initialNonToyCubes = useRef(0);
 
   const currentLevelConfig = useMemo(() => LEVELS[level % LEVELS.length], [level]);
 
   const initializeLevel = useCallback(() => {
-    const { gridSize, toySize, colors, toyColor } = currentLevelConfig;
+    const { gridSize, toySize, colors, toyColor, toughCubeChance = 0 } = currentLevelConfig;
     const newCubes: CubeType[] = [];
     const center = Math.floor(gridSize / 2);
     const toyStart = center - Math.floor(toySize / 2);
     const toyEnd = center + Math.floor(toySize / 2);
+    let nonToyCount = 0;
 
     for (let x = 0; x < gridSize; x++) {
       for (let y = 0; y < gridSize; y++) {
@@ -36,16 +40,23 @@ const useGameLogic = () => {
             y >= toyStart && y <= toyEnd &&
             z >= toyStart && z <= toyEnd;
           
+          const isTough = !isToy && Math.random() < toughCubeChance;
+          if(!isToy) nonToyCount++;
+
           newCubes.push({
             id: `${x}-${y}-${z}`,
             x, y, z,
             color: isToy ? toyColor : colors[Math.floor(Math.random() * colors.length)],
             isVisible: true,
             isToy,
+            cubeType: isTough ? 'tough' : 'normal',
+            health: isTough ? TOUGH_CUBE_HEALTH : 1,
+            maxHealth: isTough ? TOUGH_CUBE_HEALTH : 1,
           });
         }
       }
     }
+    initialNonToyCubes.current = nonToyCount;
     setCubes(newCubes);
     setIsGameActive(true);
     setIsWon(false);
@@ -54,6 +65,7 @@ const useGameLogic = () => {
     setEffects([]);
     setIsAutoDiscovering(false);
     setDigHistory([]);
+    setWinStats({ digs: 0, efficiency: 0 });
     const savedHighScore = localStorage.getItem(`dig-it-highscore-${level}`);
     setHighScore(savedHighScore ? parseFloat(savedHighScore) : null);
   }, [level, currentLevelConfig]);
@@ -83,33 +95,42 @@ const useGameLogic = () => {
       AudioPlayer.playBackgroundMusic();
       hasInteracted.current = true;
     }
-    
+
     let dugCube: CubeType | undefined;
+    let cubeDestroyed = false;
+
     const newCubes = cubes.map((cube) => {
       if (cube.id === id && !cube.isToy && cube.isVisible && !cube.isDying) {
-        dugCube = { ...cube, isDying: true };
-        return { ...cube, isDying: true };
+        dugCube = { ...cube };
+        const newHealth = cube.health - 1;
+        
+        if (newHealth <= 0) {
+          cubeDestroyed = true;
+          return { ...cube, health: 0, isDying: true };
+        } else {
+          return { ...cube, health: newHealth };
+        }
       }
       return cube;
     });
 
     if (dugCube) {
       setCubes(newCubes);
-      setDigHistory(prev => [...prev, id]);
-      AudioPlayer.playDigSound();
-      setEffects(prev => [...prev, {
-        id: `${dugCube.id}-${Date.now()}`,
-        type: 'dig',
-        x: dugCube.x,
-        y: dugCube.y,
-        z: dugCube.z,
-        color: dugCube.color,
-      }]);
+      setDigHistory(prev => [...prev, { cubeId: id, previousHealth: dugCube.health }]);
 
       setIsRecoiling(true);
       setTimeout(() => setIsRecoiling(false), 150);
 
-      setTimeout(() => finalizeDig(id), CRUMBLE_ANIMATION_DURATION);
+      if (cubeDestroyed) {
+        AudioPlayer.playDigSound();
+        setEffects(prev => [...prev, {
+          id: `${dugCube.id}-${Date.now()}`, type: 'dig',
+          x: dugCube.x, y: dugCube.y, z: dugCube.z, color: dugCube.color,
+        }]);
+        setTimeout(() => finalizeDig(id), CRUMBLE_ANIMATION_DURATION);
+      } else {
+        AudioPlayer.playToughCubeHitSound();
+      }
     }
   };
 
@@ -117,9 +138,14 @@ const useGameLogic = () => {
     if (digHistory.length === 0 || isAutoDiscovering || isWon || isPaused) return;
     
     AudioPlayer.playUndoSound();
-    const lastDugId = digHistory[digHistory.length - 1];
+    const lastAction = digHistory[digHistory.length - 1];
     setDigHistory(prev => prev.slice(0, -1));
-    setCubes(prevCubes => prevCubes.map(c => c.id === lastDugId ? { ...c, isVisible: true, isDying: false } : c));
+    
+    setCubes(prevCubes => prevCubes.map(c => 
+      c.id === lastAction.cubeId 
+      ? { ...c, isVisible: true, isDying: false, health: lastAction.previousHealth } 
+      : c
+    ));
   };
   
   const autoDiscover = () => {
@@ -139,7 +165,6 @@ const useGameLogic = () => {
         if (i < cubesToDig.length) {
             const cube = cubesToDig[i];
             
-            // Re-map to the latest cubes state to avoid stale closures
             setCubes(currentCubes => currentCubes.map(c => c.id === cube.id ? { ...c, isDying: true } : c));
 
             AudioPlayer.playDigSound();
@@ -151,7 +176,6 @@ const useGameLogic = () => {
             i++;
         } else {
             clearInterval(interval);
-            // The win condition useEffect will handle the rest
         }
     }, 30);
   };
@@ -173,18 +197,18 @@ const useGameLogic = () => {
         localStorage.setItem(`dig-it-highscore-${level}`, timer.toString());
       }
       
+      const digs = digHistory.length;
+      const efficiency = digs > 0 ? (initialNonToyCubes.current / digs) * 100 : 100;
+      setWinStats({ digs, efficiency });
+      
       const { gridSize, colors, toyColor } = currentLevelConfig;
       const center = Math.floor(gridSize / 2);
       setEffects(prev => [...prev, {
-          id: `win-${level}-${Date.now()}`,
-          type: 'win',
-          x: center,
-          y: center,
-          z: center,
-          colors: [...colors, toyColor],
+          id: `win-${level}-${Date.now()}`, type: 'win',
+          x: center, y: center, z: center, colors: [...colors, toyColor],
       }]);
     }
-  }, [cubes, remainingCubes, timer, highScore, level, isWon, currentLevelConfig, isGameActive]);
+  }, [cubes, remainingCubes, timer, highScore, level, isWon, currentLevelConfig, isGameActive, digHistory]);
   
   const removeEffect = useCallback((id: string) => {
     setEffects(prev => prev.filter(e => e.id !== id));
@@ -224,6 +248,7 @@ const useGameLogic = () => {
     togglePause,
     undoLastDig,
     digHistory,
+    winStats,
   };
 };
 
