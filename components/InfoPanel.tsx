@@ -1,4 +1,5 @@
 import React from 'react';
+import * as AudioPlayer from '../utils/audio';
 
 interface InfoPanelProps {
   level: number;
@@ -8,6 +9,10 @@ interface InfoPanelProps {
   autoDiscover: () => void;
   isAutoDiscovering: boolean;
   isGameWon: boolean;
+  isPaused: boolean;
+  togglePause: () => void;
+  undoLastDig: () => void;
+  canUndo: boolean;
 }
 
 const InfoItem: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
@@ -17,6 +22,26 @@ const InfoItem: React.FC<{ label: string; value: string | number }> = ({ label, 
   </div>
 );
 
+const ActionButton: React.FC<{ onClick: () => void, disabled: boolean, children: React.ReactNode, className?: string }> = 
+({ onClick, disabled, children, className = 'bg-purple-600 hover:bg-purple-700' }) => {
+  const handleClick = () => {
+    if(!disabled) {
+      AudioPlayer.playButtonClickSound();
+      onClick();
+    }
+  }
+  return (
+    <button
+      onClick={handleClick}
+      disabled={disabled}
+      className={`px-5 py-2 text-white font-bold rounded-lg shadow-md transition-all transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:scale-100 ${className}`}
+    >
+      {children}
+    </button>
+  );
+};
+
+
 const InfoPanel: React.FC<InfoPanelProps> = ({
   level,
   timer,
@@ -24,23 +49,42 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   remainingCubes,
   autoDiscover,
   isAutoDiscovering,
-  isGameWon
+  isGameWon,
+  isPaused,
+  togglePause,
+  undoLastDig,
+  canUndo,
 }) => {
   return (
-    <div className="flex flex-col items-center gap-4 md:gap-8 mb-8">
+    <div className="flex flex-col items-center gap-4 md:gap-6 mb-6">
       <div className="flex flex-wrap gap-2 md:gap-4 justify-center">
         <InfoItem label="Level" value={level} />
         <InfoItem label="Time" value={timer.toFixed(1)} />
         <InfoItem label="Best Time" value={highScore ? highScore.toFixed(1) : '-'} />
         <InfoItem label="Cubes Left" value={remainingCubes} />
       </div>
-      <button
-        onClick={autoDiscover}
-        disabled={isAutoDiscovering || isGameWon}
-        className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-md transition-all transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:scale-100"
-      >
-        {isAutoDiscovering ? 'Discovering...' : 'Auto Discover'}
-      </button>
+      <div className="flex flex-wrap gap-2 md:gap-4 justify-center">
+        <ActionButton
+          onClick={togglePause}
+          disabled={isGameWon}
+          className="bg-yellow-500 hover:bg-yellow-600"
+        >
+          {isPaused ? 'Resume' : 'Pause'}
+        </ActionButton>
+        <ActionButton
+          onClick={undoLastDig}
+          disabled={!canUndo || isPaused}
+          className="bg-blue-500 hover:bg-blue-600"
+        >
+          Undo
+        </ActionButton>
+         <ActionButton
+          onClick={autoDiscover}
+          disabled={isAutoDiscovering || isGameWon || isPaused}
+        >
+          {isAutoDiscovering ? 'Discovering...' : 'Auto Discover'}
+        </ActionButton>
+      </div>
     </div>
   );
 };

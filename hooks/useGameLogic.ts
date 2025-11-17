@@ -10,11 +10,13 @@ const useGameLogic = () => {
   const [cubes, setCubes] = useState<CubeType[]>([]);
   const [isGameActive, setIsGameActive] = useState(false);
   const [isWon, setIsWon] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [timer, setTimer] = useState(0);
   const [highScore, setHighScore] = useState<number | null>(null);
   const [effects, setEffects] = useState<Effect[]>([]);
   const [isRecoiling, setIsRecoiling] = useState(false);
   const [isAutoDiscovering, setIsAutoDiscovering] = useState(false);
+  const [digHistory, setDigHistory] = useState<string[]>([]);
   const hasInteracted = useRef(false);
 
   const currentLevelConfig = useMemo(() => LEVELS[level % LEVELS.length], [level]);
@@ -47,9 +49,11 @@ const useGameLogic = () => {
     setCubes(newCubes);
     setIsGameActive(true);
     setIsWon(false);
+    setIsPaused(false);
     setTimer(0);
     setEffects([]);
     setIsAutoDiscovering(false);
+    setDigHistory([]);
     const savedHighScore = localStorage.getItem(`dig-it-highscore-${level}`);
     setHighScore(savedHighScore ? parseFloat(savedHighScore) : null);
   }, [level, currentLevelConfig]);
@@ -60,20 +64,20 @@ const useGameLogic = () => {
 
   useEffect(() => {
     let interval: number | undefined;
-    if (isGameActive && !isWon) {
+    if (isGameActive && !isWon && !isPaused) {
       interval = window.setInterval(() => {
         setTimer((prev) => prev + 0.1);
       }, 100);
     }
     return () => clearInterval(interval);
-  }, [isGameActive, isWon]);
+  }, [isGameActive, isWon, isPaused]);
   
   const finalizeDig = useCallback((id: string) => {
      setCubes(currentCubes => currentCubes.map(c => c.id === id ? { ...c, isVisible: false, isDying: false } : c));
   }, []);
 
   const digCube = (id: string) => {
-    if (isWon || isAutoDiscovering) return;
+    if (isWon || isAutoDiscovering || isPaused) return;
 
     if (!hasInteracted.current) {
       AudioPlayer.playBackgroundMusic();
@@ -91,6 +95,7 @@ const useGameLogic = () => {
 
     if (dugCube) {
       setCubes(newCubes);
+      setDigHistory(prev => [...prev, id]);
       AudioPlayer.playDigSound();
       setEffects(prev => [...prev, {
         id: `${dugCube.id}-${Date.now()}`,
@@ -107,9 +112,18 @@ const useGameLogic = () => {
       setTimeout(() => finalizeDig(id), CRUMBLE_ANIMATION_DURATION);
     }
   };
+
+  const undoLastDig = () => {
+    if (digHistory.length === 0 || isAutoDiscovering || isWon || isPaused) return;
+    
+    AudioPlayer.playUndoSound();
+    const lastDugId = digHistory[digHistory.length - 1];
+    setDigHistory(prev => prev.slice(0, -1));
+    setCubes(prevCubes => prevCubes.map(c => c.id === lastDugId ? { ...c, isVisible: true, isDying: false } : c));
+  };
   
   const autoDiscover = () => {
-    if (isAutoDiscovering || isWon) return;
+    if (isAutoDiscovering || isWon || isPaused) return;
 
     if (!hasInteracted.current) {
       AudioPlayer.playBackgroundMusic();
@@ -117,6 +131,7 @@ const useGameLogic = () => {
     }
 
     setIsAutoDiscovering(true);
+    setDigHistory([]); // Clear history, undo is not compatible with auto discover
     const cubesToDig = cubes.filter(c => !c.isToy && c.isVisible);
     
     let i = 0;
@@ -183,6 +198,11 @@ const useGameLogic = () => {
     initializeLevel();
   };
 
+  const togglePause = () => {
+    if(isWon) return;
+    setIsPaused(p => !p);
+  }
+
   return {
     cubes,
     level: level + 1,
@@ -200,6 +220,10 @@ const useGameLogic = () => {
     currentLevelConfig,
     removeEffect,
     autoDiscover,
+    isPaused,
+    togglePause,
+    undoLastDig,
+    digHistory,
   };
 };
 

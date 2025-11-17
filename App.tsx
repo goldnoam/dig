@@ -5,10 +5,15 @@ import Footer from './components/Footer';
 import InfoPanel from './components/InfoPanel';
 import useGameLogic from './hooks/useGameLogic';
 import { useTheme } from './contexts/ThemeContext';
+import { useSettings } from './contexts/SettingsContext';
 import Fireworks from './components/Fireworks';
+import SettingsModal from './components/SettingsModal';
+import * as AudioPlayer from './utils/audio';
+
 
 export default function App(): React.JSX.Element {
   const { theme } = useTheme();
+  const { isSettingsOpen } = useSettings();
   const {
     cubes,
     level,
@@ -26,6 +31,10 @@ export default function App(): React.JSX.Element {
     removeEffect,
     autoDiscover,
     currentLevelConfig,
+    isPaused,
+    togglePause,
+    undoLastDig,
+    digHistory,
   } = useGameLogic();
 
   useEffect(() => {
@@ -36,8 +45,19 @@ export default function App(): React.JSX.Element {
     }
   }, [theme]);
 
+  const handleNextLevel = () => {
+    AudioPlayer.playButtonClickSound();
+    nextLevel();
+  }
+
+  const handleResetGame = () => {
+    AudioPlayer.playButtonClickSound();
+    resetGame();
+  }
+
   return (
     <div className="flex flex-col min-h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 items-center justify-between p-4 selection:bg-cyan-500/30 transition-colors duration-300">
+      {isSettingsOpen && <SettingsModal />}
       <Header />
       
       <main className="flex flex-col items-center justify-center flex-grow w-full relative">
@@ -49,16 +69,28 @@ export default function App(): React.JSX.Element {
           autoDiscover={autoDiscover}
           isAutoDiscovering={isAutoDiscovering}
           isGameWon={isWon}
+          isPaused={isPaused}
+          togglePause={togglePause}
+          undoLastDig={undoLastDig}
+          canUndo={digHistory.length > 0 && !isAutoDiscovering && !isWon}
         />
-        <GameBoard
-          cubes={cubes}
-          digCube={digCube}
-          finalizeDig={finalizeDig}
-          effects={effects}
-          removeEffect={removeEffect}
-          isRecoiling={isRecoiling}
-          toyShape={currentLevelConfig.toyShape}
-        />
+        <div className="relative">
+            <GameBoard
+              cubes={cubes}
+              digCube={digCube}
+              finalizeDig={finalizeDig}
+              effects={effects}
+              removeEffect={removeEffect}
+              isRecoiling={isRecoiling}
+              toyShape={currentLevelConfig.toyShape}
+              isPaused={isPaused}
+            />
+             {isPaused && (
+              <div className="absolute inset-0 bg-black/50 z-40 flex items-center justify-center rounded-2xl">
+                <h2 className="text-6xl font-bold text-white animate-pulse">Paused</h2>
+              </div>
+            )}
+        </div>
         {isWon && (
           <>
             <Fireworks />
@@ -68,13 +100,13 @@ export default function App(): React.JSX.Element {
                   <p className="text-lg mt-2">Your time: {timer.toFixed(1)}s</p>
                   <div className="flex justify-center space-x-4 mt-6">
                     <button
-                      onClick={nextLevel}
+                      onClick={handleNextLevel}
                       className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105"
                     >
                       Next Level
                     </button>
                      <button
-                      onClick={resetGame}
+                      onClick={handleResetGame}
                       className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105"
                     >
                       Play Again

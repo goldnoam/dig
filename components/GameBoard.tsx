@@ -11,20 +11,22 @@ interface GameBoardProps {
   removeEffect: (id: string) => void;
   isRecoiling: boolean;
   toyShape: string;
+  isPaused: boolean;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, finalizeDig, effects, removeEffect, isRecoiling, toyShape }) => {
+const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, finalizeDig, effects, removeEffect, isRecoiling, toyShape, isPaused }) => {
   const [rotation, setRotation] = useState({ x: -25, y: 35 });
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isPaused) return;
     setIsDragging(true);
     setLastMousePos({ x: e.clientX, y: e.clientY });
   };
   
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDragging || isPaused) return;
     const dx = e.clientX - lastMousePos.x;
     const dy = e.clientY - lastMousePos.y;
     setRotation(r => ({ x: r.x - dy * 0.5, y: r.y + dx * 0.5 }));
@@ -43,6 +45,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, finalizeDig, effe
 
   const containerStyle: React.CSSProperties = {
     transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) scale3d(${isRecoiling ? 0.98 : 1}, ${isRecoiling ? 0.98 : 1}, ${isRecoiling ? 0.98 : 1})`,
+    pointerEvents: isPaused ? 'none' : 'auto',
   };
   
   const gameBoardSize = gridSize * CUBE_SIZE * 1.5;
