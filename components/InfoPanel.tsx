@@ -15,14 +15,37 @@ interface InfoPanelProps {
   canUndo: boolean;
   nextLevel: () => void;
   resetGame: () => void;
+  onLevelSelectClick: () => void;
 }
 
-const InfoItem: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
-  <div className="flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-800/50 p-4 rounded-lg min-w-[120px] transition-colors">
-    <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400">{label}</span>
-    <span className="text-3xl font-bold tracking-tighter">{value}</span>
-  </div>
-);
+const InfoItem: React.FC<{ label: string; value: string | number; isButton?: boolean; onClick?: () => void; }> = ({ label, value, isButton, onClick }) => {
+  const content = (
+    <>
+      <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400">{label}</span>
+      <span className="text-3xl font-bold tracking-tighter">{value}</span>
+    </>
+  );
+
+  const commonClasses = "flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-800/50 p-4 rounded-lg min-w-[120px] transition-colors";
+  
+  if (isButton && onClick) {
+    return (
+      <button 
+        onClick={onClick} 
+        className={`${commonClasses} hover:bg-gray-300 dark:hover:bg-gray-700/80 cursor-pointer`}
+        aria-label={`Select level, current level is ${value}`}
+        >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className={commonClasses}>
+      {content}
+    </div>
+  );
+};
 
 const ActionButton: React.FC<{ onClick: () => void, disabled: boolean, children: React.ReactNode, className?: string }> = 
 ({ onClick, disabled, children, className = 'bg-purple-600 hover:bg-purple-700' }) => {
@@ -57,12 +80,13 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   undoLastDig,
   canUndo,
   nextLevel,
-  resetGame
+  resetGame,
+  onLevelSelectClick,
 }) => {
   return (
     <div className="flex flex-col items-center gap-4 md:gap-6 mb-6">
       <div className="flex flex-wrap gap-2 md:gap-4 justify-center">
-        <InfoItem label="Level" value={level} />
+        <InfoItem label="Level" value={level} isButton onClick={onLevelSelectClick} />
         <InfoItem label="Time" value={timer.toFixed(1)} />
         <InfoItem label="Best Time" value={highScore ? highScore.toFixed(1) : '-'} />
         <InfoItem label="Cubes Left" value={remainingCubes} />

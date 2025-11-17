@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import * as AudioPlayer from '../utils/audio';
 
 type Theme = 'light' | 'dark';
 
@@ -23,9 +24,15 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   useEffect(() => {
     localStorage.setItem('dig-it-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [theme]);
 
   const toggleTheme = () => {
+    AudioPlayer.playButtonClickSound();
     setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
   };
 

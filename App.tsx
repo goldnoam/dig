@@ -4,16 +4,16 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import InfoPanel from './components/InfoPanel';
 import useGameLogic from './hooks/useGameLogic';
-import { useTheme } from './contexts/ThemeContext';
 import { useSettings } from './contexts/SettingsContext';
 import Fireworks from './components/Fireworks';
 import SettingsModal from './components/SettingsModal';
+import LevelSelectModal from './components/LevelSelectModal';
+import { LEVELS } from './constants';
 import * as AudioPlayer from './utils/audio';
 import { GoogleGenAI } from "@google/genai";
 
 
 export default function App(): React.JSX.Element {
-  const { theme } = useTheme();
   const { isSettingsOpen } = useSettings();
   const {
     cubes,
@@ -37,9 +37,11 @@ export default function App(): React.JSX.Element {
     undoLastDig,
     digHistory,
     winStats,
+    goToLevel,
   } = useGameLogic();
   
   const [isWinModalOpen, setIsWinModalOpen] = useState(false);
+  const [isLevelSelectOpen, setIsLevelSelectOpen] = useState(false);
   const [winModalView, setWinModalView] = useState<'stats' | 'story'>('stats');
   const [storyContent, setStoryContent] = useState('');
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
@@ -51,14 +53,6 @@ export default function App(): React.JSX.Element {
     }
   }, [isWon]);
 
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
   const handleNextLevel = () => {
     AudioPlayer.playButtonClickSound();
     nextLevel();
@@ -67,6 +61,12 @@ export default function App(): React.JSX.Element {
   const handleResetGame = () => {
     AudioPlayer.playButtonClickSound();
     resetGame();
+  }
+
+  const handleSelectLevel = (levelIndex: number) => {
+    AudioPlayer.playButtonClickSound();
+    goToLevel(levelIndex);
+    setIsLevelSelectOpen(false);
   }
 
   const handleCreateStory = async () => {
@@ -95,6 +95,13 @@ export default function App(): React.JSX.Element {
   return (
     <div className="flex flex-col min-h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 items-center justify-between p-4 selection:bg-cyan-500/30 transition-colors duration-300">
       {isSettingsOpen && <SettingsModal />}
+      <LevelSelectModal 
+        isOpen={isLevelSelectOpen}
+        onClose={() => setIsLevelSelectOpen(false)}
+        onSelectLevel={handleSelectLevel}
+        totalLevels={LEVELS.length}
+        currentLevel={level}
+      />
       <Header />
       
       <main className="flex flex-col items-center justify-center flex-grow w-full relative">
@@ -112,6 +119,7 @@ export default function App(): React.JSX.Element {
           canUndo={digHistory.length > 0 && !isAutoDiscovering && !isWon}
           nextLevel={handleNextLevel}
           resetGame={handleResetGame}
+          onLevelSelectClick={() => setIsLevelSelectOpen(true)}
         />
         <div className="relative" id="game-board-container">
             <GameBoard

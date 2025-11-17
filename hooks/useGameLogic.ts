@@ -19,7 +19,6 @@ const useGameLogic = () => {
   const [isAutoDiscovering, setIsAutoDiscovering] = useState(false);
   const [digHistory, setDigHistory] = useState<DigAction[]>([]);
   const [winStats, setWinStats] = useState<WinStats>({ digs: 0, efficiency: 0 });
-  const hasInteracted = useRef(false);
   const initialNonToyCubes = useRef(0);
 
   const currentLevelConfig = useMemo(() => LEVELS[level % LEVELS.length], [level]);
@@ -91,11 +90,6 @@ const useGameLogic = () => {
   const digCube = (id: string) => {
     if (isWon || isAutoDiscovering || isPaused) return;
 
-    if (!hasInteracted.current) {
-      AudioPlayer.playBackgroundMusic();
-      hasInteracted.current = true;
-    }
-
     let dugCube: CubeType | undefined;
     let cubeDestroyed = false;
 
@@ -150,11 +144,6 @@ const useGameLogic = () => {
   
   const autoDiscover = () => {
     if (isAutoDiscovering || isWon || isPaused) return;
-
-    if (!hasInteracted.current) {
-      AudioPlayer.playBackgroundMusic();
-      hasInteracted.current = true;
-    }
 
     setIsAutoDiscovering(true);
     setDigHistory([]); // Clear history, undo is not compatible with auto discover
@@ -218,6 +207,10 @@ const useGameLogic = () => {
     setLevel(prev => prev + 1);
   };
 
+  const goToLevel = (levelIndex: number) => {
+    setLevel(levelIndex);
+  };
+
   const resetGame = () => {
     initializeLevel();
   };
@@ -249,6 +242,7 @@ const useGameLogic = () => {
     undoLastDig,
     digHistory,
     winStats,
+    goToLevel,
   };
 };
 

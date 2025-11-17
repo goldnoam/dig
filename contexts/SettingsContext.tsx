@@ -4,8 +4,8 @@ import * as AudioPlayer from '../utils/audio';
 interface SettingsContextType {
   isSettingsOpen: boolean;
   toggleSettings: () => void;
-  musicVolume: number;
-  setMusicVolume: (volume: number) => void;
+  isMuted: boolean;
+  toggleMute: () => void;
   effectsVolume: number;
   setEffectsVolume: (volume: number) => void;
 }
@@ -14,30 +14,30 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [musicVolume, setMusicVolumeState] = useState<number>(() => {
-    if (typeof window === 'undefined') return 0;
-    const saved = localStorage.getItem('dig-it-music-volume');
-    return saved ? parseFloat(saved) : 0;
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const saved = localStorage.getItem('dig-it-muted');
+    return saved ? JSON.parse(saved) : false;
   });
   const [effectsVolume, setEffectsVolumeState] = useState<number>(() => {
-    if (typeof window === 'undefined') return 0;
+    if (typeof window === 'undefined') return 0.5;
     const saved = localStorage.getItem('dig-it-effects-volume');
-    return saved ? parseFloat(saved) : 0;
+    return saved ? parseFloat(saved) : 0.5;
   });
 
   useEffect(() => {
-    localStorage.setItem('dig-it-music-volume', String(musicVolume));
-    AudioPlayer.setMusicVolume(musicVolume);
-  }, [musicVolume]);
+    localStorage.setItem('dig-it-muted', JSON.stringify(isMuted));
+    AudioPlayer.setMuted(isMuted);
+  }, [isMuted]);
 
   useEffect(() => {
     localStorage.setItem('dig-it-effects-volume', String(effectsVolume));
     AudioPlayer.setEffectsVolume(effectsVolume);
   }, [effectsVolume]);
   
-  // Set initial volume on load
+  // Set initial audio settings on load
   useEffect(() => {
-    AudioPlayer.setMusicVolume(musicVolume);
+    AudioPlayer.setMuted(isMuted);
     AudioPlayer.setEffectsVolume(effectsVolume);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -49,9 +49,10 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
   
-  const setMusicVolume = (volume: number) => {
-    setMusicVolumeState(volume);
-  };
+  const toggleMute = () => {
+    setIsMuted(prev => !prev);
+    AudioPlayer.playButtonClickSound();
+  }
 
   const setEffectsVolume = (volume: number) => {
     setEffectsVolumeState(volume);
@@ -59,7 +60,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
 
   return (
-    <SettingsContext.Provider value={{ isSettingsOpen, toggleSettings, musicVolume, setMusicVolume, effectsVolume, setEffectsVolume }}>
+    <SettingsContext.Provider value={{ isSettingsOpen, toggleSettings, isMuted, toggleMute, effectsVolume, setEffectsVolume }}>
       {children}
     </SettingsContext.Provider>
   );

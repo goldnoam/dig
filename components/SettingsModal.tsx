@@ -2,7 +2,7 @@ import React from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 
 const SettingsModal = (): React.JSX.Element | null => {
-  const { isSettingsOpen, toggleSettings, musicVolume, setMusicVolume, effectsVolume, setEffectsVolume } = useSettings();
+  const { isSettingsOpen, toggleSettings, effectsVolume, setEffectsVolume } = useSettings();
 
   if (!isSettingsOpen) {
     return null;
@@ -31,20 +31,7 @@ const SettingsModal = (): React.JSX.Element | null => {
         <h2 className="text-3xl font-bold text-center mb-6">Settings</h2>
         <div className="space-y-6">
           <div className="flex flex-col">
-            <label htmlFor="music-volume" className="text-lg mb-2">Music Volume</label>
-            <input
-              id="music-volume"
-              type="range"
-              min="0"
-              max="0.5"
-              step="0.01"
-              value={musicVolume}
-              onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
-              className="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-            />
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="effects-volume" className="text-lg mb-2">Effects Volume</label>
+            <label htmlFor="effects-volume" className="text-lg mb-2">Sound Volume</label>
             <input
               id="effects-volume"
               type="range"
