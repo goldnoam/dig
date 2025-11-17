@@ -107,6 +107,13 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
             >
               {isAutoDiscovering ? 'Discovering...' : 'Auto Discover'}
             </ActionButton>
+             <ActionButton
+              onClick={nextLevel}
+              disabled={isAutoDiscovering}
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              Next Level
+            </ActionButton>
           </>
         )}
       </div>
