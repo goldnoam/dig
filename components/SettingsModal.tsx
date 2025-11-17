@@ -1,8 +1,10 @@
 import React from 'react';
 import { useSettings } from '../contexts/SettingsContext';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 const SettingsModal = (): React.JSX.Element | null => {
   const { isSettingsOpen, toggleSettings, effectsVolume, setEffectsVolume } = useSettings();
+  const { t, lang, setLang, availableLanguages } = useLocalization();
 
   if (!isSettingsOpen) {
     return null;
@@ -22,16 +24,16 @@ const SettingsModal = (): React.JSX.Element | null => {
         <button 
           onClick={toggleSettings}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-          aria-label="Close settings"
+          aria-label={t.closeSettings}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h2 className="text-3xl font-bold text-center mb-6">Settings</h2>
+        <h2 className="text-3xl font-bold text-center mb-6">{t.settings}</h2>
         <div className="space-y-6">
           <div className="flex flex-col">
-            <label htmlFor="effects-volume" className="text-lg mb-2">Sound Volume</label>
+            <label htmlFor="effects-volume" className="text-lg mb-2">{t.soundVolume}</label>
             <input
               id="effects-volume"
               type="range"
@@ -42,6 +44,19 @@ const SettingsModal = (): React.JSX.Element | null => {
               onChange={(e) => setEffectsVolume(parseFloat(e.target.value))}
               className="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
             />
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="language-select" className="text-lg mb-2">{t.language}</label>
+            <select
+              id="language-select"
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              className="w-full p-2 rounded-lg bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+            >
+              {Object.entries(availableLanguages).map(([code, name]) => (
+                <option key={code} value={code}>{name}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

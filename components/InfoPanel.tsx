@@ -1,5 +1,6 @@
 import React from 'react';
 import * as AudioPlayer from '../utils/audio';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 interface InfoPanelProps {
   level: number;
@@ -18,7 +19,7 @@ interface InfoPanelProps {
   onLevelSelectClick: () => void;
 }
 
-const InfoItem: React.FC<{ label: string; value: string | number; isButton?: boolean; onClick?: () => void; }> = ({ label, value, isButton, onClick }) => {
+const InfoItem: React.FC<{ label: string; value: string | number; isButton?: boolean; onClick?: () => void; ariaLabel?: string }> = ({ label, value, isButton, onClick, ariaLabel }) => {
   const content = (
     <>
       <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400">{label}</span>
@@ -33,7 +34,7 @@ const InfoItem: React.FC<{ label: string; value: string | number; isButton?: boo
       <button 
         onClick={onClick} 
         className={`${commonClasses} hover:bg-gray-300 dark:hover:bg-gray-700/80 cursor-pointer`}
-        aria-label={`Select level, current level is ${value}`}
+        aria-label={ariaLabel}
         >
         {content}
       </button>
@@ -83,13 +84,14 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   resetGame,
   onLevelSelectClick,
 }) => {
+  const { t } = useLocalization();
   return (
     <div className="flex flex-col items-center gap-4 md:gap-6 mb-6">
       <div className="flex flex-wrap gap-2 md:gap-4 justify-center">
-        <InfoItem label="Level" value={level} isButton onClick={onLevelSelectClick} />
-        <InfoItem label="Time" value={timer.toFixed(1)} />
-        <InfoItem label="Best Time" value={highScore ? highScore.toFixed(1) : '-'} />
-        <InfoItem label="Cubes Left" value={remainingCubes} />
+        <InfoItem label={t.level} value={level} isButton onClick={onLevelSelectClick} ariaLabel={t.selectLevelAria.replace('{level}', String(level))} />
+        <InfoItem label={t.time} value={timer.toFixed(1)} />
+        <InfoItem label={t.bestTime} value={highScore ? highScore.toFixed(1) : '-'} />
+        <InfoItem label={t.cubesLeft} value={remainingCubes} />
       </div>
       <div className="flex flex-wrap gap-2 md:gap-4 justify-center">
         {isGameWon ? (
@@ -99,14 +101,14 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
               disabled={false}
               className="bg-green-500 hover:bg-green-600"
             >
-              Next Level
+              {t.nextLevel}
             </ActionButton>
             <ActionButton
               onClick={resetGame}
               disabled={false}
               className="bg-blue-500 hover:bg-blue-600"
             >
-              Play Again
+              {t.playAgain}
             </ActionButton>
           </>
         ) : (
@@ -116,27 +118,27 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
               disabled={isGameWon}
               className="bg-yellow-500 hover:bg-yellow-600"
             >
-              {isPaused ? 'Resume' : 'Pause'}
+              {isPaused ? t.resume : t.pause}
             </ActionButton>
             <ActionButton
               onClick={undoLastDig}
               disabled={!canUndo || isPaused}
               className="bg-blue-500 hover:bg-blue-600"
             >
-              Undo
+              {t.undo}
             </ActionButton>
              <ActionButton
               onClick={autoDiscover}
               disabled={isAutoDiscovering || isGameWon || isPaused}
             >
-              {isAutoDiscovering ? 'Discovering...' : 'Auto Discover'}
+              {isAutoDiscovering ? t.discovering : t.autoDiscover}
             </ActionButton>
              <ActionButton
               onClick={nextLevel}
               disabled={isAutoDiscovering}
               className="bg-orange-500 hover:bg-orange-600"
             >
-              Next Level
+              {t.nextLevel}
             </ActionButton>
           </>
         )}

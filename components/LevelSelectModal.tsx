@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 interface LevelSelectModalProps {
   isOpen: boolean;
@@ -9,6 +10,8 @@ interface LevelSelectModalProps {
 }
 
 const LevelSelectModal: React.FC<LevelSelectModalProps> = ({ isOpen, onClose, onSelectLevel, totalLevels, currentLevel }) => {
+  const { t } = useLocalization();
+
   if (!isOpen) {
     return null;
   }
@@ -27,13 +30,13 @@ const LevelSelectModal: React.FC<LevelSelectModalProps> = ({ isOpen, onClose, on
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-          aria-label="Close level selection"
+          aria-label={t.closeLevelSelect}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h2 className="text-3xl font-bold text-center mb-6">Select a Level</h2>
+        <h2 className="text-3xl font-bold text-center mb-6">{t.selectLevel}</h2>
         <div className="grid grid-cols-4 md:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto p-1">
           {Array.from({ length: totalLevels }).map((_, i) => (
             <button

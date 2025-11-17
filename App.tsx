@@ -11,10 +11,12 @@ import LevelSelectModal from './components/LevelSelectModal';
 import { LEVELS } from './constants';
 import * as AudioPlayer from './utils/audio';
 import { GoogleGenAI } from "@google/genai";
+import { useLocalization } from './contexts/LocalizationContext';
 
 
 export default function App(): React.JSX.Element {
   const { isSettingsOpen } = useSettings();
+  const { t, lang, languageMap } = useLocalization();
   const {
     cubes,
     level,
@@ -78,7 +80,7 @@ export default function App(): React.JSX.Element {
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-      const prompt = `Write a short, whimsical story for a child about a ${currentLevelConfig.toyShape}. The story should be about 100 words and have a happy ending.`;
+      const prompt = `Write a short, whimsical story for a child about a ${currentLevelConfig.toyShape} in ${languageMap[lang]}. The story should be about 100 words and have a happy ending.`;
       const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
           contents: prompt,
@@ -86,10 +88,25 @@ export default function App(): React.JSX.Element {
       setStoryContent(response.text);
     } catch (error) {
       console.error("Error generating story:", error);
-      setStoryContent("Oops! I couldn't think of a story right now. Maybe we can try again later!");
+      setStoryContent(t.storyError);
     } finally {
       setIsGeneratingStory(false);
     }
+  };
+
+  const handleExportStory = () => {
+    AudioPlayer.playButtonClickSound();
+    if (!storyContent) return;
+
+    const blob = new Blob([storyContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `dig-it-story-${currentLevelConfig.toyShape}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -134,7 +151,7 @@ export default function App(): React.JSX.Element {
             />
              {isPaused && (
               <div className="absolute inset-0 bg-black/50 z-40 flex items-center justify-center rounded-2xl">
-                <h2 className="text-6xl font-bold text-white animate-pulse">Paused</h2>
+                <h2 className="text-6xl font-bold text-white animate-pulse">{t.paused}</h2>
               </div>
             )}
         </div>
@@ -147,7 +164,7 @@ export default function App(): React.JSX.Element {
                     <button
                         onClick={() => setIsWinModalOpen(false)}
                         className="absolute top-2 right-2 text-gray-400 hover:text-white transition-colors"
-                        aria-label="Close win screen"
+                        aria-label={t.closeWinScreen}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -156,37 +173,37 @@ export default function App(): React.JSX.Element {
                     
                     {winModalView === 'stats' && (
                       <>
-                        <h2 className="text-4xl font-bold text-yellow-400 animate-pulse">You found the toy!</h2>
+                        <h2 className="text-4xl font-bold text-yellow-400 animate-pulse">{t.winTitle}</h2>
                         <div className="grid grid-cols-2 gap-4 my-4 text-left">
                           <div className="bg-white/10 p-3 rounded-lg">
-                              <p className="text-sm text-gray-300">Time</p>
+                              <p className="text-sm text-gray-300">{t.time}</p>
                               <p className="text-2xl font-bold">{timer.toFixed(1)}s</p>
                           </div>
                           <div className="bg-white/10 p-3 rounded-lg">
-                              <p className="text-sm text-gray-300">Best Time</p>
+                              <p className="text-sm text-gray-300">{t.bestTime}</p>
                               <p className="text-2xl font-bold">{highScore ? highScore.toFixed(1) + 's' : '-'}</p>
                           </div>
                           <div className="bg-white/10 p-3 rounded-lg">
-                              <p className="text-sm text-gray-300">Cubes Dug</p>
+                              <p className="text-sm text-gray-300">{t.dug}</p>
                               <p className="text-2xl font-bold">{winStats.digs}</p>
                           </div>
                           <div className="bg-white/10 p-3 rounded-lg">
-                              <p className="text-sm text-gray-300">Efficiency</p>
+                              <p className="text-sm text-gray-300">{t.efficiency}</p>
                               <p className="text-2xl font-bold">{winStats.efficiency.toFixed(0)}%</p>
                           </div>
                         </div>
 
                         <div className="flex flex-wrap justify-center gap-4 mt-6">
-                          <button onClick={handleNextLevel} className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">Next Level</button>
-                          <button onClick={handleResetGame} className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">Play Again</button>
-                           <button onClick={handleCreateStory} className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">Create Story</button>
+                          <button onClick={handleNextLevel} className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">{t.nextLevel}</button>
+                          <button onClick={handleResetGame} className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">{t.playAgain}</button>
+                           <button onClick={handleCreateStory} className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">{t.createStory}</button>
                         </div>
                       </>
                     )}
                     
                     {winModalView === 'story' && (
                       <div>
-                        <h3 className="text-3xl font-bold text-cyan-400 mb-4">A story about a {currentLevelConfig.toyShape}</h3>
+                        <h3 className="text-3xl font-bold text-cyan-400 mb-4">{t.storyTitle.replace('{toyName}', currentLevelConfig.toyShape)}</h3>
                         {isGeneratingStory ? (
                           <div className="flex items-center justify-center h-32">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
@@ -194,8 +211,9 @@ export default function App(): React.JSX.Element {
                         ) : (
                           <p className="text-left whitespace-pre-wrap bg-white/5 p-4 rounded-lg h-40 overflow-y-auto">{storyContent}</p>
                         )}
-                        <div className="flex justify-center mt-6">
-                           <button onClick={() => setWinModalView('stats')} className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">Back to Stats</button>
+                        <div className="flex justify-center gap-4 mt-6">
+                           <button onClick={() => setWinModalView('stats')} className="px-5 py-2 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">{t.backToStats}</button>
+                           {!isGeneratingStory && storyContent && <button onClick={handleExportStory} className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">{t.exportStory}</button>}
                         </div>
                       </div>
                     )}

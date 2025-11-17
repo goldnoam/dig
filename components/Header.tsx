@@ -1,10 +1,12 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 const Header = (): React.JSX.Element => {
   const { theme, toggleTheme } = useTheme();
   const { toggleSettings, isMuted, toggleMute } = useSettings();
+  const { t } = useLocalization();
 
   const handleToggleTheme = () => {
     toggleTheme();
@@ -14,13 +16,13 @@ const Header = (): React.JSX.Element => {
     <header className="w-full flex justify-center items-center p-4 relative">
       <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-center">
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
-          Dig It!
+          {t.title}
         </span>
       </h1>
       <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center space-x-2">
          <button
             onClick={toggleMute}
-            aria-label={isMuted ? "Unmute sound" : "Mute sound"}
+            aria-label={isMuted ? t.unmute : t.mute}
             className="p-2 rounded-full bg-gray-200/50 dark:bg-gray-700/50 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
            {isMuted ? (
@@ -36,7 +38,7 @@ const Header = (): React.JSX.Element => {
         </button>
         <button
             onClick={toggleSettings}
-            aria-label="Open settings"
+            aria-label={t.openSettings}
             className="p-2 rounded-full bg-gray-200/50 dark:bg-gray-700/50 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -46,7 +48,7 @@ const Header = (): React.JSX.Element => {
         </button>
         <button
           onClick={handleToggleTheme}
-          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          aria-label={t.toggleTheme.replace('{theme}', theme === 'dark' ? 'light' : 'dark')}
           className="p-2 rounded-full bg-gray-200/50 dark:bg-gray-700/50 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
         >
           {theme === 'dark' ? (
