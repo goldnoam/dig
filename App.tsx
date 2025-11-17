@@ -24,7 +24,7 @@ export default function App(): React.JSX.Element {
     highScore,
     remainingCubes,
     isWon,
-    isRecoiling,
+    hitCubeInfo,
     isAutoDiscovering,
     effects,
     digCube,
@@ -145,7 +145,7 @@ export default function App(): React.JSX.Element {
               finalizeDig={finalizeDig}
               effects={effects}
               removeEffect={removeEffect}
-              isRecoiling={isRecoiling}
+              hitCubeInfo={hitCubeInfo}
               toyShape={currentLevelConfig.toyShape}
               isPaused={isPaused}
             />

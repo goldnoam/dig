@@ -9,12 +9,12 @@ interface GameBoardProps {
   finalizeDig: (id: string) => void;
   effects: Effect[];
   removeEffect: (id: string) => void;
-  isRecoiling: boolean;
+  hitCubeInfo: { id: string; wasDestroyed: boolean } | null;
   toyShape: string;
   isPaused: boolean;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, finalizeDig, effects, removeEffect, isRecoiling, toyShape, isPaused }) => {
+const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, finalizeDig, effects, removeEffect, hitCubeInfo, toyShape, isPaused }) => {
   const [rotation, setRotation] = useState({ x: -25, y: 35 });
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
@@ -44,7 +44,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, finalizeDig, effe
   const gridCenter = (gridSize - 1) / 2;
 
   const containerStyle: React.CSSProperties = {
-    transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) scale3d(${isRecoiling ? 0.98 : 1}, ${isRecoiling ? 0.98 : 1}, ${isRecoiling ? 0.98 : 1})`,
+    transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
     pointerEvents: isPaused ? 'none' : 'auto',
   };
   
@@ -72,6 +72,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ cubes, digCube, finalizeDig, effe
             digCube={digCube}
             finalizeDig={finalizeDig}
             toyShape={toyShape}
+            hitCubeInfo={hitCubeInfo}
           />
         ))}
         {effects.map((effect) => (

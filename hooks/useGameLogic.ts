@@ -15,7 +15,7 @@ const useGameLogic = () => {
   const [timer, setTimer] = useState(0);
   const [highScore, setHighScore] = useState<number | null>(null);
   const [effects, setEffects] = useState<Effect[]>([]);
-  const [isRecoiling, setIsRecoiling] = useState(false);
+  const [hitCubeInfo, setHitCubeInfo] = useState<{ id: string, wasDestroyed: boolean } | null>(null);
   const [isAutoDiscovering, setIsAutoDiscovering] = useState(false);
   const [digHistory, setDigHistory] = useState<DigAction[]>([]);
   const [winStats, setWinStats] = useState<WinStats>({ digs: 0, efficiency: 0 });
@@ -111,9 +111,10 @@ const useGameLogic = () => {
     if (dugCube) {
       setCubes(newCubes);
       setDigHistory(prev => [...prev, { cubeId: id, previousHealth: dugCube.health }]);
+      
+      setHitCubeInfo({ id, wasDestroyed: cubeDestroyed });
+      setTimeout(() => setHitCubeInfo(null), 200);
 
-      setIsRecoiling(true);
-      setTimeout(() => setIsRecoiling(false), 150);
 
       if (cubeDestroyed) {
         AudioPlayer.playDigSound();
@@ -227,7 +228,7 @@ const useGameLogic = () => {
     highScore,
     remainingCubes,
     isWon,
-    isRecoiling,
+    hitCubeInfo,
     isAutoDiscovering,
     effects,
     digCube,

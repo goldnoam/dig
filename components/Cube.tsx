@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CubeType } from '../types';
 
 interface CubeProps {
@@ -8,9 +8,11 @@ interface CubeProps {
   digCube: (id: string) => void;
   finalizeDig: (id: string) => void;
   toyShape: string;
+  hitCubeInfo: { id: string; wasDestroyed: boolean } | null;
 }
 
-const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube, toyShape }) => {
+const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube, toyShape, hitCubeInfo }) => {
+  const [isHovered, setIsHovered] = useState(false);
   const { x, y, z, color, isVisible, isToy, id, isDying, cubeType, health, maxHealth } = cube;
 
   if (!isVisible && !isDying) {
@@ -20,8 +22,19 @@ const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube, t
   const posX = (x - gridCenter) * size;
   const posY = (y - gridCenter) * size;
   const posZ = (z - gridCenter) * size;
+  
+  const isCurrentlyHit = hitCubeInfo?.id === id;
+  const isToughHit = isCurrentlyHit && !hitCubeInfo.wasDestroyed;
 
-  const style: React.CSSProperties = {
+  // --- Animation & Interaction Logic ---
+  let scale = 1.0;
+  if (isHovered && !isCurrentlyHit) {
+      scale = 1.1; // Hover
+  } else if (isCurrentlyHit) {
+      scale = 0.9; // Recoil on any hit
+  }
+  
+  const outerStyle: React.CSSProperties = {
     width: `${size}px`,
     height: `${size}px`,
     position: 'absolute',
@@ -30,6 +43,25 @@ const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube, t
     animation: isDying ? `crumble 300ms ease-out forwards` : undefined,
     pointerEvents: isDying ? 'none' : 'auto',
   };
+  
+  const recoilStyle: React.CSSProperties = {
+      width: '100%',
+      height: '100%',
+      transform: `scale(${scale})`,
+      transition: 'transform 150ms ease-out',
+      transformStyle: 'preserve-3d',
+  };
+
+  const shakeStyle: React.CSSProperties = {
+      width: '100%',
+      height: '100%',
+      transformStyle: 'preserve-3d',
+  };
+
+  if (isToughHit) {
+      shakeStyle.animation = 'shake 300ms ease-out';
+  }
+  // --- End Animation Logic ---
 
   const handleClick = () => {
     if (!isToy && !isDying) {
@@ -41,7 +73,7 @@ const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube, t
   if (isToy) {
     const toySize = size * 1.2;
     return (
-      <div style={style}>
+      <div style={outerStyle}>
         <div
           style={{
             width: `${toySize}px`,
@@ -94,22 +126,28 @@ const CubeComponent: React.FC<CubeProps> = ({ cube, size, gridCenter, digCube, t
 
   return (
     <div
-      style={style}
+      style={outerStyle}
       onClick={handleClick}
-      className="cursor-pointer group transform hover:scale-110 transition-transform duration-100"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="cursor-pointer"
     >
-      <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
-        {faces.map((face, i) => (
-          <div
-            key={i}
-            className="group-hover:brightness-125 transition-all duration-100"
-            style={{ 
-              ...faceStyle, 
-              transform: face.transform, 
-              filter: `brightness(${face.brightness * toughnessBrightness * damageBrightness})` 
-            }}
-          />
-        ))}
+      <div style={recoilStyle}>
+        <div style={shakeStyle}>
+          <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
+            {faces.map((face, i) => (
+              <div
+                key={i}
+                className="hover:brightness-125 transition-all duration-100"
+                style={{ 
+                  ...faceStyle, 
+                  transform: face.transform, 
+                  filter: `brightness(${face.brightness * toughnessBrightness * damageBrightness})` 
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
